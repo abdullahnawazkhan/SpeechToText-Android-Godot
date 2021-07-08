@@ -1,0 +1,3 @@
+include ':SpeechToText'
+include ':app'
+rootProject.name = "Speech To Text"

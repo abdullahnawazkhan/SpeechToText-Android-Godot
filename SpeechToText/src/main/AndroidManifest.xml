@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.speechtotext">
+
+    <application>
+        <meta-data
+            android:name="org.godotengine.plugin.v1.SpeechToText"
+            android:value="com.example.speechtotext.SpeechToText" />
+    </application>
+</manifest>
