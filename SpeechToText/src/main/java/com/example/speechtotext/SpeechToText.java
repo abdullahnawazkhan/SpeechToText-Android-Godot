@@ -13,14 +13,17 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.collection.ArraySet;
 
 import org.godotengine.godot.Godot;
 import org.godotengine.godot.plugin.GodotPlugin;
+import org.godotengine.godot.plugin.SignalInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class SpeechToText extends GodotPlugin {
     // tag for logging this specific module
@@ -28,7 +31,7 @@ public class SpeechToText extends GodotPlugin {
 
     private SpeechRecognizer speechRecognizer;
     private Intent intent;
-
+    private String currentLanguage;
     // holds the words spoken by the user
     // will hold the value "error" if there was some error with STT
     private String words;
@@ -47,7 +50,7 @@ public class SpeechToText extends GodotPlugin {
                 intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
 
                 // this specifies the language to Android's STT Module
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-SA");
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, currentLanguage);
 
                 speechRecognizer.setRecognitionListener(new RecognitionListener() {
                     @Override
@@ -55,6 +58,7 @@ public class SpeechToText extends GodotPlugin {
                     }
                     @Override
                     public void onBeginningOfSpeech() {
+                        Log.d(TAG, "Speech Has Started");
                     }
                     @Override
                     public void onRmsChanged(float rmsdB) {
@@ -64,11 +68,14 @@ public class SpeechToText extends GodotPlugin {
                     }
                     @Override
                     public void onEndOfSpeech() {
+                        Log.d(TAG, "Speech Has Ended");
                     }
                     @Override
                     public void onError(int error) {
                         // this function will either be called if there is some internal error with Android's speech to text
                         // or user has said nothing while the "listen" function is being called
+                        Log.d(TAG, "Error Has Occured" + error);
+                        emitSignal("error", error);
                         words = "error";
                     }
                     @Override
@@ -79,6 +86,8 @@ public class SpeechToText extends GodotPlugin {
                         // high accuracy == best result string
                         ArrayList<String> data = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                         words = data.get(0);
+                        emitSignal("listening_completed", words);
+                        Log.d(TAG, words);
                     }
                     @Override
                     public void onPartialResults(Bundle partialResults) {
@@ -101,30 +110,60 @@ public class SpeechToText extends GodotPlugin {
     @NonNull
     @Override
     public List<String> getPluginMethods() {
-        return Arrays.asList("listen", "stop", "getWords");
+        return Arrays.asList("listen", "stop", "getWords", "setLanguage");
     }
 
     public void stop() {
         getActivity().runOnUiThread(new Runnable() {
             @Override
+
             public void run() {
+                Log.d(TAG, "Speech Has Started");
                 speechRecognizer.stopListening();
+
             }
         });
     }
-
+    /**
+     * Starts the listening process for the google STT engine.
+     */
     public void listen() {
         words = "";
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "Listening startedd");
+                Log.d(TAG, "Listening started");
                 speechRecognizer.startListening(intent);
             }
         });
     }
-
+    /**
+     * Sets the users language.
+     * @param language  The Language the user is using.
+     */
+    public void setLanguage(String language){
+        currentLanguage = language;
+        Log.d(TAG, "Set Language to: " + language);
+    }
+    /**
+     * Returns the last spoken words of the user.
+     * @return String of the last spoken words the user said in the current session.
+     */
     public String getWords() {
+        Log.d(TAG, "Returning Words: " + words);
         return words;
+    }
+    /**
+     * Sets up all the signals the user has access to.
+     * @return The signals that Godot can use.
+     */
+    @NonNull
+    @Override
+    public Set<SignalInfo> getPluginSignals() {
+        //return super.getPluginSignals();
+        Set<SignalInfo> signals = new ArraySet<>();
+        signals.add(new SignalInfo("listening_completed", String.class));
+        signals.add(new SignalInfo("error", String.class));
+        return signals;
     }
 }
