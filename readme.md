@@ -13,24 +13,25 @@ Once you have that plugin installed then you need to go to Project -> Exports ->
 YOU MUST HAVE THE RECORD AUDIO PERMISSION
 
 ## API Refrence
-- Sets the language of your text to speech plugin.
-setLanguage(string Language) 
+- setLanguage(string Language) -> Sets the language of your text to speech plugin.
 
-- Starts the process of listening to the user.
-listen()
 
-- Stops the listening and reports the audio it emits the listening_completed signel.
-stop()
+- listen() -> Starts the process of listening to the user.
 
-- Returns the last sessions words the user spoke.
-getWords()
+
+- stop()  -> Stops the listening and reports the audio it emits the listening_completed signel.
+
+
+- getWords()  -> Returns the last sessions words the user spoke.
+
 
 ## Signels
-listening_completed -> string
+listening_completed -> string 
 Emitted on completion of the users session with the voice to text returns voice data
 
 error -> int
 Emitted on error of voice processing with an error code.
+
 ## Future Updates
 
 
