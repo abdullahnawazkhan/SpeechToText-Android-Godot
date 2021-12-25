@@ -124,7 +124,9 @@ public class SpeechToText extends GodotPlugin {
             }
         });
     }
-
+    /**
+     * Starts the listening process for the google STT engine.
+     */
     public void listen() {
         words = "";
         getActivity().runOnUiThread(new Runnable() {
@@ -135,15 +137,26 @@ public class SpeechToText extends GodotPlugin {
             }
         });
     }
+    /**
+     * Sets the users language.
+     * @param language  The Language the user is using.
+     */
     public void setLanguage(String language){
         currentLanguage = language;
         Log.d(TAG, "Set Language to: " + language);
     }
+    /**
+     * Returns the last spoken words of the user.
+     * @return String of the last spoken words the user said in the current session.
+     */
     public String getWords() {
         Log.d(TAG, "Returning Words: " + words);
         return words;
     }
-
+    /**
+     * Sets up all the signals the user has access to.
+     * @return The signals that Godot can use.
+     */
     @NonNull
     @Override
     public Set<SignalInfo> getPluginSignals() {
