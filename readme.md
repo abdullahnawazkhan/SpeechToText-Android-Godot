@@ -25,6 +25,12 @@ stop()
 - Returns the last sessions words the user spoke.
 getWords()
 
+## Signels
+listening_completed -> string
+Emitted on completion of the users session with the voice to text returns voice data
+
+error -> int
+Emitted on error of voice processing with an error code.
 ## Future Updates
 
 
