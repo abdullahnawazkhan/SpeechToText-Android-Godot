@@ -24,8 +24,11 @@ YOU MUST HAVE THE RECORD AUDIO PERMISSION
 
 - getWords()  -> Returns the last sessions words the user spoke.
 
+-isSTTAvailable() -> Returns if the Speech to text is available on your device.
 
-## Signels
+- cancel() -> Cancels the speech to text (can fix random 5 errors).
+
+## Signals
 listening_completed -> string 
 Emitted on completion of the users session with the voice to text returns voice data
 
