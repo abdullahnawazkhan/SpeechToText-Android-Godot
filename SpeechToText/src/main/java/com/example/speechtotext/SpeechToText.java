@@ -35,6 +35,12 @@ public class SpeechToText extends GodotPlugin {
     // holds the words spoken by the user
     // will hold the value "error" if there was some error with STT
     private String words;
+    private boolean isErrorAlreadyCalledAfterBeginOfSpeech = false;
+    /**
+     * Save the latest partial result for reporting when offline.
+     */
+    private Bundle latestPartialResults = null;
+
     public SpeechToText(Godot godot) {
         super(godot);
 
@@ -56,8 +62,12 @@ public class SpeechToText extends GodotPlugin {
                     @Override
                     public void onReadyForSpeech(Bundle params) {
                     }
+                    /**
+                     * Fires on start of STT
+                     */
                     @Override
                     public void onBeginningOfSpeech() {
+                        latestPartialResults = null;
                         Log.d(TAG, "Speech Has Started");
                     }
                     @Override
@@ -74,9 +84,36 @@ public class SpeechToText extends GodotPlugin {
                     public void onError(int error) {
                         // this function will either be called if there is some internal error with Android's speech to text
                         // or user has said nothing while the "listen" function is being called
-                        Log.d(TAG, "Error Has Occured" + error);
-                        emitSignal("error", error);
-                        words = "error";
+                        Log.d(TAG, "Error Has Occured " + error);
+                       // If the error has already been fired attempt to recover some words that where spoken.
+                        if(!isErrorAlreadyCalledAfterBeginOfSpeech) {
+                            isErrorAlreadyCalledAfterBeginOfSpeech = true;
+                            Log.d(TAG, "Checking For Partial Results");
+                            if (isOfflineSpeechRecognition(error, latestPartialResults)) {
+                                Log.d(TAG, "Appending Partial Results");
+                                appendUnstableTextToResult(latestPartialResults);
+                                onResults(latestPartialResults);
+                            }
+                        }
+                        emitSignal("error", String.valueOf(error));
+
+                        //words = "error";
+                    }
+
+                    /**
+                     * Checks if we are offline speech recognition
+                     */
+                    private boolean isOfflineSpeechRecognition(int error, Bundle latestPartialResults) {
+                        return error == SpeechRecognizer.ERROR_NO_MATCH && latestPartialResults != null;
+                    }
+                    private void appendUnstableTextToResult(Bundle partialResults) {
+                        // Partial results are split up by previous spoken text and the current spoken text after
+                        // short speak break given as 'UNSTABLE_TEXT'. To provide same usage for online and offline
+                        // we report it combined. It gives only one result when doing speech recognition offline.
+                        Log.d(TAG, "Appending Partial Results");
+                        ArrayList<String> target = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                        ArrayList<String> source = partialResults.getStringArrayList("android.speech.extra.UNSTABLE_TEXT");
+                        words = (target.get(0) + " " + source.get(0)).trim();
                     }
                     @Override
                     public void onResults(Bundle results) {
@@ -89,8 +126,13 @@ public class SpeechToText extends GodotPlugin {
                         emitSignal("listening_completed", words);
                         Log.d(TAG, words);
                     }
+                    /**
+                     * Gets the partial results(if a result was not verified) and returns it.
+                     */
                     @Override
                     public void onPartialResults(Bundle partialResults) {
+                        latestPartialResults = partialResults;
+
                     }
                     @Override
                     public void onEvent(int eventType, Bundle params) {
@@ -118,8 +160,28 @@ public class SpeechToText extends GodotPlugin {
             @Override
 
             public void run() {
-                Log.d(TAG, "Speech Has Started");
+                Log.d(TAG, "Speech has stop listening.");
                 speechRecognizer.stopListening();
+
+            }
+        });
+    }
+    /**
+     * Checks if the speech processor is able to be ran on the device.
+     */
+    public void isSTTAvailable() {
+        SpeechRecognizer.isRecognitionAvailable(getActivity());
+    }
+    /**
+     * Cancels the speech processor (can fix small bugs with parsing).
+     */
+    public void cancel() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+
+            public void run() {
+                Log.d(TAG, "Speech has canceled.");
+                speechRecognizer.cancel();
 
             }
         });
@@ -133,6 +195,7 @@ public class SpeechToText extends GodotPlugin {
             @Override
             public void run() {
                 Log.d(TAG, "Listening started");
+
                 speechRecognizer.startListening(intent);
             }
         });
